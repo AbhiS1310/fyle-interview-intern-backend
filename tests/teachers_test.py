@@ -44,7 +44,7 @@ def test_grade_assignment_cross(client, h_teacher_2):
     assert data['error'] == 'FyleError'
 
 
-def test_grade_assignment_bad_grade(client, h_teacher_1):
+def test_grade_assignment_bad_grade1(client, h_teacher_1):
     """
     failure case: API should allow only grades available in enum
     """
@@ -62,6 +62,23 @@ def test_grade_assignment_bad_grade(client, h_teacher_1):
 
     assert data['error'] == 'ValidationError'
 
+def test_grade_assignment_bad_grade2(client, h_teacher_1):
+    """
+    failure case: API should allow only grades available in enum
+    """
+    response = client.post(
+        '/teacher/assignments/grade',
+        headers=h_teacher_1,
+        json={
+            "id": 1,
+            "grade": None
+        }
+    )
+
+    assert response.status_code == 400
+    data = response.json
+
+    assert data['error'] == 'ValidationError'
 
 def test_grade_assignment_bad_assignment(client, h_teacher_1):
     """
@@ -99,3 +116,32 @@ def test_grade_assignment_draft_assignment(client, h_teacher_1):
     data = response.json
 
     assert data['error'] == 'FyleError'
+
+def test_submit_assignment_student_1(client, h_teacher_2):
+    response = client.post(
+        '/student/assignments/submit',
+        headers=h_teacher_2,
+        json={
+            'id': 2,
+            'teacher_id': 2
+        })
+
+    assert response.status_code == 403
+
+def test_grade_assignment(client, h_teacher_2):
+    """
+    failure case: only a submitted assignment can be graded
+    """
+    response = client.post(
+        '/teacher/assignments/grade',
+        headers=h_teacher_2
+        , json={
+            "id": 3,
+            "grade": "C"
+        }
+    )
+
+    assert response.status_code == 200
+    data = response.json['data']
+    assert data['state'] == 'GRADED'
+    assert data['grade'] == "C"
